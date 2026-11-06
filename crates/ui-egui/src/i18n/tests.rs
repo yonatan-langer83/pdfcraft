@@ -102,6 +102,7 @@ fn candidates_walk_from_specific_to_general() {
     assert_eq!(candidates("nb_NO.UTF-8"), ["nb-no", "nb"]);
     assert_eq!(candidates("no_NO.UTF-8"), ["no-no", "no", "nb"]);
     assert_eq!(candidates("nn-NO"), ["nn-no", "nn", "nb"]);
+    assert_eq!(candidates("iw_IL.UTF-8"), ["iw-il", "iw", "he"]);
 }
 
 /// The locale variables, the first detection step: `LC_ALL` over `LC_MESSAGES` over `LANG`, an
@@ -580,6 +581,14 @@ fn pdfcraft_plural_rule(code: &str) -> fn(u64) -> usize {
             _ => 3,
         }
     }
+    // CLDR `he` for whole counts the catalogs list: one (1), two (2), other.
+    fn he(n: u64) -> usize {
+        match n {
+            1 => 0,
+            2 => 1,
+            _ => 2,
+        }
+    }
     match code {
         "ja" | "zh-hans" | "zh-hant" | "tr" | "id" | "vi" | "th" | "lo" | "hi" | "ko" => none,
         "cs" => cs,
@@ -588,6 +597,7 @@ fn pdfcraft_plural_rule(code: &str) -> fn(u64) -> usize {
         "ar" => ar,
         "pl" => pl,
         "sl" => sl,
+        "he" => he,
         "lt" => lt,
         "ro" => ro,
         _ => one_other,
@@ -1258,7 +1268,7 @@ fn arabic_is_registered_and_persists() {
     assert_eq!(ar.name(), "العربية");
     assert!(ar.rtl());
     let rtl: Vec<&str> = Lang::all().filter(|l| l.rtl()).map(|l| l.code()).collect();
-    assert_eq!(rtl, ["ar", "ckb", "fa"], "Arabic, Kurdish and Persian are the right-to-left languages");
+    assert_eq!(rtl, ["ar", "ckb", "fa", "he"], "Arabic, Kurdish, Persian and Hebrew are the right-to-left languages");
     assert_eq!(normalize_pref("AR"), Some("ar"));
     for tag in ["ar", "ar-MA", "ar_EG.UTF-8", "AR-sa", "ar_DZ@variant"] {
         assert_eq!(lang_from_tag(tag), Some(ar), "{tag}");
@@ -1305,6 +1315,82 @@ fn arabic_plurals_follow_the_six_cldr_forms() {
     assert_eq!([3, 10, 103, 110, 1003].map(&form), [3; 5]);
     assert_eq!([11, 99, 111, 199, 1011].map(&form), [4; 5]);
     assert_eq!([100, 101, 102, 200, 1000, u64::MAX - 13].map(&form), [5; 6]);
+}
+
+fn hebrew() -> Lang {
+    Lang::from_code("he").expect("he registered")
+}
+
+#[test]
+fn hebrew_is_registered_and_persists() {
+    needs_catalogs!();
+    let he = hebrew();
+    assert_eq!(he.english_name(), "Hebrew");
+    assert_eq!(he.name(), "עברית");
+    assert!(he.rtl());
+    assert_eq!(normalize_pref("HE"), Some("he"));
+    // `iw` is the code Java and older Android systems still report for Hebrew.
+    for tag in ["he", "he-IL", "he_IL.UTF-8", "HE-il", "iw", "iw-IL", "iw_IL.UTF-8"] {
+        assert_eq!(lang_from_tag(tag), Some(he), "{tag}");
+    }
+    assert_eq!(first_supported("he-IL\r\nen-US"), Some(he));
+    assert_eq!(first_supported("iw-IL"), Some(he));
+    // Shared catalog rows (also the ones a pdfcraft override may duplicate). Lookups stay logical.
+    assert_eq!(tr(he, "File"), "קובץ");
+    assert_eq!(tr(he, "Save"), "שמירה");
+    assert_eq!(tr(he, "Cancel"), "ביטול");
+    assert_eq!(tr(he, "Save as…"), "שמירה בשם…");
+    assert_eq!(tr(he, "דוח סופי {n}.pdf"), "דוח סופי {n}.pdf");
+    let previous = current();
+    set_current(he);
+    assert_eq!(crate::bidi::ui_direction(), egui::epaint::text::TextDirection::RightToLeft);
+    set_current(previous);
+    let mut app = crate::PdfCraftApp::default();
+    app.set_option("language", "HE").unwrap();
+    assert_eq!(app.language, "he");
+    let mut restored = crate::PdfCraftApp::default();
+    restored.restore(&app.persist());
+    assert_eq!(restored.language, "he");
+    assert!(restored.set_option("language", "xx").is_err());
+    assert_eq!(restored.language, "he");
+}
+
+/// Hebrew counts (CLDR `he`, whole numbers): one (1), two (2), other.
+#[test]
+fn hebrew_plurals_follow_the_three_cldr_forms() {
+    let form = plural_fixture("he", 3);
+    assert_eq!([1, 2].map(&form), [0, 1]);
+    assert_eq!([0, 3, 10, 11, 20, 100, u64::MAX].map(&form), [2; 7]);
+}
+
+/// With a craft-fonts Hebrew face, the Hebrew catalog and common niqqud marks have glyphs,
+/// including when that face is the only craft-fonts face (the web build keeps it).
+#[test]
+fn hebrew_labels_have_glyphs() {
+    let faces: Vec<String> = pdfcraft_fonts::ui_hebrew_fonts().iter().map(|f| f.name()).collect();
+    if faces.is_empty() {
+        eprintln!("skipping Hebrew glyph checks: build with CRAFT_FONTS_DIR and a Hebrew face to run them");
+        return;
+    }
+    needs_catalogs!();
+    let he = hebrew();
+    // Sheva, dagesh, tsere, qamats, holam and shin dot: not required to be in the catalog.
+    let niqqud = "שָׁלוֹם עוֹלָם בְּרֵאשִׁית";
+    let labels: String = translations("he").chars().chain(he.name().chars()).chain(niqqud.chars()).filter(|c| !c.is_control()).collect();
+    assert!(labels.contains('\u{05B8}'), "a niqqud mark is checked");
+    let mut hebrew_only = crate::theme::font_definitions();
+    for family in hebrew_only.families.values_mut() {
+        family.retain(|name| !pdfcraft_fonts::CRAFT_FONTS.iter().any(|face| face.name() == *name) || faces.contains(name));
+    }
+    use egui::epaint::text::{Fonts, TextOptions};
+    for (build, defs) in [("all faces", crate::theme::font_definitions()), ("Hebrew face only", hebrew_only)] {
+        let mut fonts = Fonts::new(TextOptions::default(), defs);
+        for id in [egui::FontId::proportional(13.0), egui::FontId::monospace(13.0), crate::theme::medium(13.0), crate::theme::semibold(17.0)] {
+            let missing: std::collections::BTreeSet<char> =
+                labels.chars().filter(|c| !c.is_whitespace() && !fonts.has_glyphs(&id, &c.to_string())).collect();
+            assert!(missing.is_empty(), "{build}: {id:?} lacks Hebrew label glyphs {missing:?}");
+        }
+    }
 }
 
 fn persian() -> Lang {

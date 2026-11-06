@@ -66,7 +66,7 @@ pub struct LangInfo {
 }
 
 /// How many languages [`LANGUAGES`] lists.
-const LANGUAGE_COUNT: usize = 35;
+const LANGUAGE_COUNT: usize = 36;
 
 /// The languages PdfCraft offers. English first: it is the fallback and the source language.
 pub static LANGUAGES: [LangInfo; LANGUAGE_COUNT] = [
@@ -110,6 +110,10 @@ pub static LANGUAGES: [LangInfo; LANGUAGE_COUNT] = [
     // to left like Arabic: see `LangInfo::rtl`. CLDR `fa` counts have two forms (one: i = 0 or n = 1,
     // other), which for whole counts is the French rule, so `@plural` entries list two forms.
     LangInfo { code: "fa", rtl: true },
+    // Hebrew; every `he-*` locale (`he-IL`) resolves here, and so does the legacy `iw` code that
+    // Java and older Android systems still report (see `candidates`). Right to left like Arabic:
+    // see `LangInfo::rtl`. CLDR `he` integer counts have three forms (one, two, other).
+    LangInfo { code: "he", rtl: true },
     // Polish; every `pl-*` locale (`pl-pl`, `pl_pl.UTF-8`) resolves here.
     LangInfo { code: "pl", rtl: false },
     // Slovene; every `sl-*` locale (`sl-SI`) resolves here. Four plural forms (one, two, few, other).
@@ -261,6 +265,7 @@ impl Lang {
             "ar" => "Arabic",
             "ckb" => "Central Kurdish",
             "fa" => "Persian",
+            "he" => "Hebrew",
             "pl" => "Polish",
             "sl" => "Slovenian",
             "el" => "Greek",
@@ -363,6 +368,10 @@ fn candidates(tag: &str) -> Vec<String> {
     if primary == "pt" && !out.iter().any(|c| c == "pt-br") {
         // The only Portuguese catalog is Brazilian; other regions use it rather than English.
         out.insert(out.len().saturating_sub(1), "pt-br".to_string());
+    }
+    if primary == "iw" {
+        // Legacy ISO 639 code for Hebrew, superseded by `he`.
+        out.push("he".to_string());
     }
     if matches!(primary, "no" | "nn") {
         // The only Norwegian catalog is Bokmål. `no` (Norwegian in general) and Nynorsk readers use
