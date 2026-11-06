@@ -186,3 +186,9 @@ sync_github_name = true
 
 [people.helenkwok]
 real_name = "Helen Kwok"
+
+[people.yonatan-langer83]
+real_name = "Yonatan Langer"
+display_name = "Yonatan Langer"
+sync_github_name = false
+consent_source = "Asked to be credited as Yonatan Langer, 2026-11-06"

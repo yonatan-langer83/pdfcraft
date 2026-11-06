@@ -325,8 +325,10 @@ pub static DATE_LANGUAGES: [DateLanguage; 36] = [
         ]),
         months_short: ["ינו׳", "פבר׳", "מרץ", "אפר׳", "מאי", "יוני", "יולי", "אוג׳", "ספט׳", "אוק׳", "נוב׳", "דצמ׳"],
         months_short_with_day: Some(["בינו׳", "בפבר׳", "במרץ", "באפר׳", "במאי", "ביוני", "ביולי", "באוג׳", "בספט׳", "באוק׳", "בנוב׳", "בדצמ׳"]),
-        days: ["יום ראשון", "יום שני", "יום שלישי", "יום רביעי", "יום חמישי", "יום שישי", "שבת"],
-        days_short: ["א׳", "ב׳", "ג׳", "ד׳", "ה׳", "ו׳", "ש׳"],
+        days: ["יום ראשון", "יום שני", "יום שלישי", "יום רביעי", "יום חמישי", "יום שישי", "יום שבת"],
+        // Abbreviated (`ddd`), the same forms as CLDR and the Windows he-IL short weekdays.
+        // Calendar column heads in craft-i18n use the narrower א׳…ש׳ instead.
+        days_short: ["יום א׳", "יום ב׳", "יום ג׳", "יום ד׳", "יום ה׳", "יום ו׳", "שבת"],
     },
     DateLanguage {
         code: "pl",
@@ -1000,13 +1002,14 @@ mod tests {
     /// comes first, or a month with no day number, stays unprefixed, abbreviated or not.
     #[test]
     fn hebrew_month_prefix_depends_on_the_day_appearing_first() {
-        assert_eq!(in_lang("dddd, d mmmm yyyy", "he"), "שבת, 7 במרץ 2026");
+        assert_eq!(in_lang("dddd, d mmmm yyyy", "he"), "יום שבת, 7 במרץ 2026");
+        assert_eq!(in_lang("ddd", "he"), "שבת");
         assert_eq!(in_lang("d mmm yyyy", "he"), "7 במרץ 2026");
         assert_eq!(in_lang("mmmm d, yyyy", "he"), "מרץ 7, 2026");
         assert_eq!(in_lang("mmm d, yyyy", "he"), "מרץ 7, 2026");
         assert_eq!(in_lang("mmmm yyyy", "he"), "מרץ 2026");
         // A weekday is not a day number, so it does not prefix the month.
-        assert_eq!(in_lang("dddd, mmmm", "he"), "שבת, מרץ");
+        assert_eq!(in_lang("dddd, mmmm", "he"), "יום שבת, מרץ");
     }
 
     #[test]
