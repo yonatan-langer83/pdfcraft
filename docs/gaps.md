@@ -1,5 +1,6 @@
 # Where PdfCraft falls short of Acrobat Pro
 
+> **Last reviewed:** 2026-11-06 | **Last updated:** 2026-11-06 | **Change:** minor (gap 14: Hebrew is offered on the existing right-to-left path; end-to-end RTL workflows stay unqualified. Estimates unchanged)
 > **Last reviewed:** 2026-10-28 | **Last updated:** 2026-10-28 | **Change:** minor (M10, #4119 partial: Enhance scanned file cleans scanned pages in place: background removal, edge shadow removal, despeckle; estimates unchanged)
 > **Last reviewed:** 2026-10-25 · **Last updated:** 2026-10-25 · **Change:** minor (gaps 5 and 14 current state: native release Hans face via LXGW WenKai Lite; Arabic logical catalog, explicit RTL direction and mirrored stock chrome, with native/browser/IME workflows unqualified; no readiness re-estimate)
 > **Last reviewed:** 2026-10-15 · **Last updated:** 2026-10-15 · **Change:** minor (gap 3: #2517 a blank line stays a paragraph break; estimates unchanged) · **Target:** Adobe Acrobat Pro (Acrobat DC, continuous track 26.002.21931, macOS)
@@ -325,9 +326,10 @@ update the numbers.
 - **Missing:** end-to-end qualification of right-to-left interface workflows on native platforms
   and in the browser (typed RTL text, IME composition, clipboard/selection and complex multi-line
   bidirectional text); catalogs for Hindi, Indonesian and Korean (Acrobat ships Korean; it ships
-  Arabic in its Middle East edition; it ships none of Hindi or Indonesian). The logical catalog,
-  explicit right-to-left label direction and mirrored stock chrome are implemented and
-  unit-tested; complex RTL workflows are not yet accepted.
+  Arabic in its Middle East edition; it ships none of Hindi or Indonesian). Hebrew is offered on
+  that same path. The logical catalog, explicit right-to-left label direction and mirrored stock
+  chrome are implemented and unit-tested for Arabic, Kurdish, Persian and Hebrew; complex RTL
+  workflows are not yet accepted.
   Vietnamese ships as a catalog (`vi`, 100% of the current localizable union) but stays `partial`
   like other non-English languages (no translated help; engine/OS details stay English).
 - **Evidence:** [localization.md](localization.md) §Arabic; `misc.rtl-ui` planned (end-to-end

@@ -12,6 +12,9 @@ fn arabic_chrome_is_right_to_left_after_the_language_changes() {
     crate::i18n::set_current(crate::i18n::Lang::from_code("ar").expect("registered language"));
     apply(&ctx, ThemeKind::Light);
     assert!(ctx.global_style().right_to_left);
+    crate::i18n::set_current(crate::i18n::Lang::from_code("he").expect("registered language"));
+    sync_direction(&ctx);
+    assert!(ctx.global_style().right_to_left, "Hebrew mirrors stock chrome on the same path as Arabic");
     crate::i18n::set_current(crate::i18n::Lang::EN);
     sync_direction(&ctx);
     assert!(!ctx.global_style().right_to_left);
